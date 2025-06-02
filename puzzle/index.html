@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sliding Puzzle Game</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for longer content */
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            color: #333;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 600px; /* Max width for the game area */
+        }
+
+        h1 {
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column; /* Stack label and select */
+            align-items: flex-start; /* Align labels to the left */
+        }
+
+        .control-group label {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        .controls select, .controls button {
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        .controls select {
+            min-width: 120px;
+        }
+
+        .controls button {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .controls button:hover {
+            background-color: #0056b3;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .controls button:disabled {
+            background-color: #cccccc;
+            color: #666666;
+            cursor: not-allowed;
+            border-color: #cccccc;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .game-info p {
+            margin: 0;
+            padding: 8px 12px;
+            background-color: #e9ecef;
+            border-radius: 6px;
+        }
+
+        #puzzle-board-container {
+            position: relative; /* For the message overlay */
+            width: 90%; /* Responsive width */
+            max-width: 450px; /* Max size of the board */
+            aspect-ratio: 1 / 1; /* Keep it square */
+            margin: 0 auto 20px auto; /* Center the board */
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            overflow: hidden; /* Ensure pieces don't overflow rounded corners */
+        }
+
+        #puzzle-board {
+            display: grid;
+            width: 100%;
+            height: 100%;
+            background-color: #ddd; /* Fallback if image doesn't load */
+        }
+
+        .puzzle-piece {
+            background-size: cover; /* Will be adjusted by JS */
+            border: 1px solid #fff; /* Thin border between pieces */
+            box-sizing: border-box;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold; /* For piece numbers if image fails */
+            color: rgba(0,0,0,0.2);
+            user-select: none; /* Prevent text selection */
+        }
+
+        .puzzle-piece:hover:not(.empty-piece) {
+            opacity: 0.85;
+            transform: scale(1.05); /* Slight zoom on hover */
+            z-index: 10; /* Bring hovered piece to front */
+        }
+
+        .empty-piece {
+            background-image: none !important; /* Override image */
+            background-color: #f0f2f5; /* Light background for empty space */
+            cursor: default;
+            opacity: 1 !important; /* No hover effect */
+            transform: none !important; /* No hover effect */
+        }
+
+        #message-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            color: white;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            border-radius: inherit; /* Inherit board's border radius */
+        }
+
+        #win-message {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+
+        #play-again-button {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #play-again-button:hover {
+            background-color: #218838;
+        }
+
+        .instructions {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 15px;
+            line-height: 1.5;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 15px;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+            .controls {
+                flex-direction: column; /* Stack controls vertically */
+                gap: 10px;
+            }
+            .control-group {
+                width: 100%; /* Make control groups full width */
+            }
+            .controls select, .controls button {
+                width: 100%; /* Make selects and buttons full width */
+                box-sizing: border-box;
+            }
+            .game-info {
+                flex-direction: column; /* Stack info items */
+                gap: 8px;
+                align-items: center;
+            }
+            #puzzle-board-container {
+                width: 100%; /* Use full available width for board */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Sliding Puzzle</h1>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="imageSelect">Choose Image:</label>
+                <select id="imageSelect">
+                    <option value="nature.jpg">Nature</option>
+                    <option value="space.jpg">Space</option>
+                    <!-- Add more options here if you have more images -->
+                    <!-- e.g., <option value="my-image.png">My Image</option> -->
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="levelSelect">Level:</label>
+                <select id="levelSelect">
+                    <option value="3">Easy (3x3)</option>
+                    <option value="4" selected>Medium (4x4)</option>
+                    <option value="5">Hard (5x5)</option>
+                </select>
+            </div>
+            <button id="startButton">Start Game</button>
+            <button id="resetButton" disabled>Reset</button>
+        </div>
+
+        <div class="game-info">
+            <p>Moves: <span id="moves">0</span></p>
+            <p>Time: <span id="timer">00:00</span></p>
+        </div>
+
+        <div id="puzzle-board-container">
+            <div id="puzzle-board">
+                <!-- Puzzle pieces will be generated here by JavaScript -->
+            </div>
+            <div id="message-overlay">
+                <p id="win-message"></p>
+                <button id="play-again-button">Play Again</button>
+            </div>
+        </div>
+        
+        <!-- Hidden image element to load and get dimensions -->
+        <img id="sourceImage" src="" alt="Puzzle Source" style="display:none;">
+
+        <p class="instructions">
+            Click "Start Game". Click a tile adjacent to the empty space to slide it.
+            Arrange tiles to form the original image.
+        </p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const puzzleBoard = document.getElementById('puzzle-board');
+            const startButton = document.getElementById('startButton');
+            const resetButton = document.getElementById('resetButton');
+            const levelSelect = document.getElementById('levelSelect');
+            const imageSelect = document.getElementById('imageSelect');
+            const movesDisplay = document.getElementById('moves');
+            const timerDisplay = document.getElementById('timer');
+            const sourceImageElement = document.getElementById('sourceImage');
+            const messageOverlay = document.getElementById('message-overlay');
+            const winMessage = document.getElementById('win-message');
+            const playAgainButton = document.getElementById('play-again-button');
+
+            let gridSize = parseInt(levelSelect.value);
+            let pieces = [];
+            let emptyCoords = { row: 0, col: 0 };
+            let moves = 0;
+            let timerInterval;
+            let seconds = 0;
+            let gameStarted = false;
+            let currentImageSrc = '';
+            let startTime = 0; // To correctly resume timer if needed
+
+            // --- Game Setup ---
+            function initGame() {
+                gridSize = parseInt(levelSelect.value);
+                currentImageSrc = `images/${imageSelect.value}`; // Assumes images are in an 'images' folder
+                sourceImageElement.src = currentImageSrc;
+
+                // Wait for the image to load to get its dimensions for piece slicing
+                sourceImageElement.onload = () => {
+                    resetGameVisuals(); // Reset visuals and counters
+                    createPuzzle();
+                    shufflePieces();
+                    renderBoard();
+                    if (gameStarted) {
+                        startTimer();
+                    }
+                };
+                sourceImageElement.onerror = () => {
+                    alert(`Error loading image: ${currentImageSrc}. 
+                    Please ensure:
+                    1. You have an 'images' folder in the same directory as this HTML file.
+                    2. The image file '${imageSelect.value}' exists in the 'images' folder.
+                    3. The filename in the <select> dropdown matches exactly (including extension).`);
+                    startButton.disabled = false;
+                    resetButton.disabled = true;
+                    levelSelect.disabled = false;
+                    imageSelect.disabled = false;
+                    gameStarted = false;
+                }
+            }
+
+            function resetGameVisuals() {
+                moves = 0;
+                seconds = 0;
+                updateMovesDisplay();
+                updateTimerDisplay();
+                stopTimer();
+                puzzleBoard.innerHTML = '';
+                puzzleBoard.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+                puzzleBoard.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+                messageOverlay.style.display = 'none';
+                // Button/select states are handled by the calling function (start/reset/play again)
+            }
+
+            function fullResetAndEnableControls() {
+                resetGameVisuals();
+                startButton.disabled = false;
+                resetButton.disabled = true;
+                levelSelect.disabled = false;
+                imageSelect.disabled = false;
+                gameStarted = false;
+            }
+
+
+            function createPuzzle() {
+                pieces = [];
+                let count = 1;
+                for (let i = 0; i < gridSize; i++) {
+                    pieces[i] = [];
+                    for (let j = 0; j < gridSize; j++) {
+                        if (i === gridSize - 1 && j === gridSize - 1) {
+                            pieces[i][j] = 0; // 0 represents the empty space
+                            emptyCoords = { row: i, col: j };
+                        } else {
+                            pieces[i][j] = count++;
+                        }
+                    }
+                }
+            }
+
+            function shufflePieces() {
+                // Perform a series of valid moves from the solved state to ensure solvability
+                let shuffleMoves = gridSize * gridSize * 10; // Number of shuffles
+                for (let i = 0; i < shuffleMoves; i++) {
+                    const neighbors = getValidNeighbors(emptyCoords.row, emptyCoords.col);
+                    if (neighbors.length > 0) { // Ensure there are neighbors to move to
+                        const randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
+                        swapPieces(emptyCoords.row, emptyCoords.col, randomNeighbor.row, randomNeighbor.col);
+                        emptyCoords = { row: randomNeighbor.row, col: randomNeighbor.col };
+                    }
+                }
+            }
+
+            function getValidNeighbors(row, col) {
+                const neighbors = [];
+                if (row > 0) neighbors.push({ row: row - 1, col: col }); // Up
+                if (row < gridSize - 1) neighbors.push({ row: row + 1, col: col }); // Down
+                if (col > 0) neighbors.push({ row: row, col: col - 1 }); // Left
+                if (col < gridSize - 1) neighbors.push({ row: row, col: col + 1 }); // Right
+                return neighbors;
+            }
+
+            // --- Rendering ---
+            function renderBoard() {
+                puzzleBoard.innerHTML = ''; // Clear previous board
+                const imageWidth = sourceImageElement.naturalWidth;
+                const imageHeight = sourceImageElement.naturalHeight;
+
+                if (imageWidth === 0 || imageHeight === 0) {
+                    // Image not loaded properly, don't try to render pieces with it
+                    console.error("Image dimensions are zero. Cannot render puzzle pieces with image.");
+                    puzzleBoard.innerHTML = '<p style="color: red; text-align: center; grid-column: 1 / -1;">Error: Image not loaded. Cannot display puzzle.</p>';
+                    return;
+                }
+
+
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        const pieceValue = pieces[i][j];
+                        const pieceDiv = document.createElement('div');
+                        pieceDiv.classList.add('puzzle-piece');
+                        pieceDiv.dataset.row = i;
+                        pieceDiv.dataset.col = j;
+
+                        if (pieceValue === 0) {
+                            pieceDiv.classList.add('empty-piece');
+                        } else {
+                            // Calculate background position based on original image dimensions
+                            const originalRow = Math.floor((pieceValue - 1) / gridSize);
+                            const originalCol = (pieceValue - 1) % gridSize;
+                            
+                            pieceDiv.style.backgroundImage = `url(${currentImageSrc})`;
+                            // Background size should be the total size of the puzzle image scaled to fit the grid
+                            pieceDiv.style.backgroundSize = `${gridSize * 100}% ${gridSize * 100}%`;
+                            // Background position is negative to "pan" the large image
+                            pieceDiv.style.backgroundPosition = `-${originalCol * 100}% -${originalRow * 100}%`;
+                            
+                            pieceDiv.addEventListener('click', handlePieceClick);
+                        }
+                        puzzleBoard.appendChild(pieceDiv);
+                    }
+                }
+            }
+
+            // --- Game Logic ---
+            function handlePieceClick(event) {
+                if (!gameStarted) return;
+
+                const clickedRow = parseInt(event.target.dataset.row);
+                const clickedCol = parseInt(event.target.dataset.col);
+
+                if (isAdjacent(clickedRow, clickedCol, emptyCoords.row, emptyCoords.col)) {
+                    swapPieces(clickedRow, clickedCol, emptyCoords.row, emptyCoords.col);
+                    emptyCoords = { row: clickedRow, col: clickedCol }; // New empty coords
+                    moves++;
+                    updateMovesDisplay();
+                    renderBoard(); // Re-render is simple, could be optimized for large grids
+                    
+                    if (checkWin()) {
+                        handleWin();
+                    }
+                }
+            }
+
+            function isAdjacent(r1, c1, r2, c2) {
+                return (Math.abs(r1 - r2) === 1 && c1 === c2) || (Math.abs(c1 - c2) === 1 && r1 === r2);
+            }
+
+            function swapPieces(r1, c1, r2, c2) {
+                const temp = pieces[r1][c1];
+                pieces[r1][c1] = pieces[r2][c2];
+                pieces[r2][c2] = temp;
+            }
+
+            function checkWin() {
+                let count = 1;
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        if (i === gridSize - 1 && j === gridSize - 1) {
+                            if (pieces[i][j] !== 0) return false;
+                        } else {
+                            if (pieces[i][j] !== count++) return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            function handleWin() {
+                stopTimer();
+                gameStarted = false;
+                winMessage.textContent = `You Won! Moves: ${moves}, Time: ${timerDisplay.textContent}`;
+                messageOverlay.style.display = 'flex';
+                resetButton.disabled = true; 
+                startButton.disabled = false; 
+                levelSelect.disabled = false;
+                imageSelect.disabled = false;
+            }
+
+            // --- Timer & Moves ---
+            function startTimer() {
+                stopTimer(); // Clear any existing timer
+                startTime = Date.now() - (seconds * 1000);
+                timerInterval = setInterval(() => {
+                    seconds = Math.floor((Date.now() - startTime) / 1000);
+                    updateTimerDisplay();
+                }, 1000);
+            }
+
+            function stopTimer() {
+                clearInterval(timerInterval);
+            }
+
+            function updateTimerDisplay() {
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = seconds % 60;
+                timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+            }
+
+            function updateMovesDisplay() {
+                movesDisplay.textContent = moves;
+            }
+
+            // --- Event Listeners ---
+            startButton.addEventListener('click', () => {
+                gameStarted = true;
+                startButton.disabled = true;
+                resetButton.disabled = false;
+                levelSelect.disabled = true;
+                imageSelect.disabled = true;
+                seconds = 0; // Reset timer seconds for a new game
+                moves = 0; // Reset moves for a new game
+                updateTimerDisplay();
+                updateMovesDisplay();
+                initGame(); // This will call startTimer after image loads and shuffle
+            });
+
+            resetButton.addEventListener('click', () => {
+                if (gameStarted) { 
+                  stopTimer();
+                  seconds = 0;
+                  moves = 0;
+                  updateTimerDisplay();
+                  updateMovesDisplay();
+                  initGame(); // Re-initialize with current settings, shuffles and starts timer
+                } else { 
+                  fullResetAndEnableControls();
+                }
+            });
+            
+            playAgainButton.addEventListener('click', () => {
+                messageOverlay.style.display = 'none';
+                fullResetAndEnableControls(); 
+            });
+
+            // Initial setup: allow selecting level and image before starting
+            fullResetAndEnableControls(); 
+        });
+    </script>
+</body>
+</html>
