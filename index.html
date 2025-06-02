@@ -3,21 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory Flip Game - Preview</title>
+    <title>Memory Flip Game</title>
     <style>
         :root {
             --primary-color: #3498db;
-            --secondary-color: #2ecc71;
-            --accent-color: #e74c3c;
-            --light-bg: #ecf0f1;
-            --dark-text: #2c3e50;
+            --secondary-color: #2ecc71; /* Green for success/prize */
+            --accent-color: #e74c3c;   /* Red for reset */
+            --prize-color: #f39c12;    /* Orange/Gold for prize button */
+            --light-bg: #f0f2f5;
+            --dark-text: #333;
             --tile-size: 90px;
             --gap-size: 8px;
-            --transition-speed: 0.6s;
+            --transition-speed: 0.5s;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Arial', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -31,81 +32,66 @@
         }
 
         .game-container {
-            background-color: #fff;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
             text-align: center;
             width: 100%;
-            max-width: 550px;
+            max-width: 520px;
         }
 
         h1 {
             color: var(--primary-color);
-            margin-bottom: 25px;
-            font-size: 2.2em;
+            margin-bottom: 20px;
+            font-size: 2em;
         }
 
         .game-controls {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             display: flex;
             justify-content: center;
-            gap: 15px;
         }
 
         .game-controls button {
-            padding: 12px 25px;
-            font-size: 1em;
+            padding: 10px 20px;
+            font-size: 0.95em;
             font-weight: bold;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 5px;
             cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            min-width: 100px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            background-color: var(--primary-color);
         }
 
         .game-controls button:hover:not(:disabled) {
-            transform: translateY(-2px);
+            background-color: #2980b9;
+            transform: translateY(-1px);
         }
         .game-controls button:disabled {
-            background-color: #cccccc;
+            background-color: #bdc3c7;
             cursor: not-allowed;
             transform: none;
-        }
-
-        #start-button {
-            background-color: var(--secondary-color);
-        }
-        #start-button:hover:not(:disabled) {
-            background-color: #27ae60;
-        }
-
-        #reset-button {
-            background-color: var(--accent-color);
-        }
-        #reset-button:hover:not(:disabled) {
-            background-color: #c0392b;
         }
 
         .game-info {
             display: flex;
             justify-content: space-around;
-            margin-bottom: 25px;
-            font-size: 1.1em;
-            font-weight: 500;
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 1em;
+            background-color: #e9ecef;
+            padding: 8px;
+            border-radius: 5px;
         }
-        .game-info p { margin: 0 10px; }
+        .game-info p { margin: 0 8px; }
         .game-info span { font-weight: bold; color: var(--primary-color); }
 
         #game-board {
             display: grid;
             gap: var(--gap-size);
-            perspective: 1200px;
-            margin-bottom: 20px;
+            perspective: 1000px;
+            margin-bottom: 15px;
         }
 
         .tile {
@@ -114,18 +100,13 @@
             position: relative;
             cursor: pointer;
             transform-style: preserve-3d;
-            transition: transform var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 8px;
+            transition: transform var(--transition-speed) ease-in-out;
+            border-radius: 6px;
         }
 
-        .tile.flipped, .tile.peeking {
+        .tile.flipped {
             transform: rotateY(180deg);
         }
-         /* For initial preview, tiles start flipped */
-        .tile.initial-preview {
-             transform: rotateY(180deg);
-        }
-
 
         .tile-face {
             position: absolute;
@@ -135,66 +116,88 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 8px;
+            border-radius: 6px;
             overflow: hidden;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
         .tile-back {
-            background: linear-gradient(135deg, var(--primary-color), #5dade2);
+            background: linear-gradient(145deg, var(--primary-color), #5dade2 70%);
             color: white;
-            font-size: 2.5em;
+            font-size: 2.2em;
         }
         .tile-back::before {
-            content: "♢";
-            opacity: 0.7;
+            content: "★";
+            opacity: 0.6;
         }
 
         .tile-front {
-            background-color: #ffffff;
-            transform: rotateY(180deg); /* Front is on the "back" of the tile initially */
-            border: 1px solid #ddd;
+            background-color: #fdfdfd;
+            transform: rotateY(180deg);
+            border: 1px solid #ccc;
         }
 
         .tile-front img {
-            max-width: 85%;
-            max-height: 85%;
+            max-width: 80%;
+            max-height: 80%;
             object-fit: contain;
         }
 
         .tile.matched {
             cursor: default;
-            opacity: 0.8; /* Slightly more visible than just dimmed */
-            transform: rotateY(180deg) scale(1); /* Keep it flipped, no shrink */
-            box-shadow: 0 0 0 3px var(--secondary-color);
+            opacity: 0.75;
+            transform: rotateY(180deg);
+            box-shadow: 0 0 0 2px var(--secondary-color);
         }
-        .tile.matched .tile-front {
-             border: 1px solid var(--secondary-color);
+         .tile.matched .tile-front {
+            border-color: var(--secondary-color);
         }
 
         .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
+            display: none; position: fixed; z-index: 1000;
             left: 0; top: 0; width: 100%; height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.6);
+            overflow: auto; background-color: rgba(0,0,0,0.5);
             align-items: center; justify-content: center;
         }
         .modal-content {
-            background-color: #fff; margin: auto; padding: 30px;
-            border-radius: 10px; text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            width: 80%; max-width: 400px;
+            background-color: #fff; margin: auto; padding: 25px;
+            border-radius: 8px; text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            width: 90%; max-width: 380px;
         }
-        .modal-content h2 { color: var(--secondary-color); margin-top: 0; }
-        .modal-content p { font-size: 1.1em; margin-bottom: 20px; }
-        .modal-content button {
-            padding: 10px 20px; font-size: 1em; color: white;
-            background-color: var(--primary-color); border: none;
-            border-radius: 5px; cursor: pointer; transition: background-color 0.3s;
+        .modal-content h2 { color: var(--secondary-color); margin-top: 0; font-size: 1.6em;}
+        .modal-content p { font-size: 1em; margin-bottom: 15px; }
+        
+        .modal-button { /* General class for modal buttons/links */
+            display: inline-block;
+            padding: 10px 18px;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            margin-top: 10px; /* Spacing between buttons */
+            transition: background-color 0.2s, transform 0.1s;
         }
-        .modal-content button:hover { background-color: #2980b9; }
+        .modal-button:hover {
+            transform: translateY(-1px);
+        }
+
+        #play-again-button {
+            background-color: var(--primary-color);
+        }
+        #play-again-button:hover {
+            background-color: #2980b9;
+        }
+        #get-file-link {
+            background-color: var(--prize-color); /* Distinct color for prize */
+        }
+        #get-file-link:hover {
+            background-color: #d35400; /* Darker shade for prize button */
+        }
+
 
     </style>
 </head>
@@ -203,8 +206,7 @@
         <h1>Memory Flip</h1>
 
         <div class="game-controls">
-            <button id="start-button">Start Game</button>
-            <button id="reset-button" disabled>Reset Game</button>
+            <button id="new-game-button">New Game</button>
         </div>
 
         <div class="game-info">
@@ -213,25 +215,31 @@
         </div>
 
         <div id="game-board">
-            <!-- Tiles will be generated here -->
+            <!-- Tiles are generated here -->
         </div>
     </div>
 
     <div id="game-over-modal" class="modal">
         <div class="modal-content">
             <h2 id="modal-title">Congratulations!</h2>
-            <p id="modal-message">You won!</p>
+            <p id="modal-message">You found all pairs!</p>
             <p>Moves: <span id="modal-moves">0</span></p>
             <p>Time: <span id="modal-time">00:00</span></p>
-            <button id="play-again-button">Play Again</button>
+            <button id="play-again-button" class="modal-button">Play Again</button>
+            <a href="#" id="get-file-link" class="modal-button" target="_blank" style="display: none;">Get Your Prize!</a>
         </div>
     </div>
 
     <script>
+        // ----- CONFIGURATION -----
+        // !!! IMPORTANT: CHANGE THIS URL TO YOUR ACTUAL FILE LINK !!!
+        const PRIZE_FILE_URL = "YOUR_FILE_URL_HERE.zip"; // e.g., "https://example.com/secretfile.pdf"
+        // If you don't have a file right now, you can leave it as is, or set to ""
+        // const PRIZE_FILE_URL = ""; // The button will not show if this is empty
+
         document.addEventListener('DOMContentLoaded', () => {
             const gameBoard = document.getElementById('game-board');
-            const startButton = document.getElementById('start-button');
-            const resetButton = document.getElementById('reset-button');
+            const newGameButton = document.getElementById('new-game-button');
             const movesCountSpan = document.getElementById('moves-count');
             const timerSpan = document.getElementById('timer');
 
@@ -241,11 +249,12 @@
             const modalMovesSpan = document.getElementById('modal-moves');
             const modalTimeSpan = document.getElementById('modal-time');
             const playAgainButton = document.getElementById('play-again-button');
+            const getFileLink = document.getElementById('get-file-link');
+
 
             const baseImageNames = [
-                'Jellyfish.jpg', 'Lighthouse.jpg', 'Penguins.jpg',
-                'Tulips.jpg', 'Hydrangeas.jpg', 'Desert.jpg'
-                // Add more for a 4x4 grid: 'img7.png', 'img8.png'
+                'img1.png', 'img2.png', 'img3.png',
+                'img4.png', 'img5.png', 'img6.png'
             ];
             const imagePath = 'images/';
 
@@ -256,10 +265,9 @@
             let matchesFound = 0;
             let moves = 0;
             let totalPairs = 0;
-
             let timerInterval;
             let secondsElapsed = 0;
-            let gameState = 'preview'; // 'preview', 'playing', 'won'
+            let gameState = 'idle';
 
             function createImageArray() {
                 images = [];
@@ -292,10 +300,6 @@
                     tile.classList.add('tile');
                     tile.dataset.image = imageSrc;
 
-                    if (gameState === 'preview') {
-                        tile.classList.add('initial-preview'); // Start flipped to show front
-                    }
-
                     const tileBack = document.createElement('div');
                     tileBack.classList.add('tile-face', 'tile-back');
 
@@ -304,62 +308,30 @@
                     const img = document.createElement('img');
                     img.src = imageSrc;
                     img.alt = "Tile Image";
-                    img.onerror = () => { img.alt = "Error"; tileFront.textContent = "X"; };
+                    img.draggable = false;
+                    img.onerror = () => { img.alt = "Image Error"; tileFront.textContent = "⚠️"; };
                     tileFront.appendChild(img);
 
                     tile.appendChild(tileBack);
                     tile.appendChild(tileFront);
-
                     tile.addEventListener('click', handleTileClick);
-                    tile.addEventListener('contextmenu', handleTileRightClick);
                     gameBoard.appendChild(tile);
                 });
             }
-
-            function actuallyStartGame(clickedCardToFlip = null) {
-                if (gameState !== 'preview') return; // Only start if in preview
-
-                gameState = 'playing';
-                lockBoard = true; // Lock board briefly while flipping all cards
-
-                // Flip all cards face down
-                const allTiles = gameBoard.querySelectorAll('.tile');
-                let flipDelay = 0;
-                allTiles.forEach(tile => {
-                    setTimeout(() => {
-                        tile.classList.remove('initial-preview'); // This makes them show their back
-                        tile.classList.remove('flipped'); // Ensure it's not considered flipped from preview
-                    }, flipDelay);
-                    flipDelay += 30; // Stagger flip for a nice effect
-                });
-                
-                setTimeout(() => {
-                    startTimer();
-                    moves = 0; // Ensure moves are reset if game started by tile click
-                    updateMovesCount();
-                    startButton.disabled = true;
-                    resetButton.disabled = false;
-                    lockBoard = false;
-
-                    // If game was started by clicking a tile, flip that one back up as the first pick
-                    if (clickedCardToFlip) {
-                        clickedCardToFlip.classList.add('flipped');
-                        firstCard = clickedCardToFlip;
-                    }
-                }, flipDelay + 200); // Wait for all flips to complete + a bit
-            }
-
-
+            
             function handleTileClick(event) {
+                if (lockBoard) return;
                 const clickedCard = event.currentTarget;
 
-                if (gameState === 'preview') {
-                    actuallyStartGame(clickedCard);
+                if (clickedCard === firstCard || clickedCard.classList.contains('matched') || clickedCard.classList.contains('flipped')) {
                     return;
                 }
-
-                if (gameState !== 'playing' || lockBoard || clickedCard.classList.contains('peeking')) return;
-                if (clickedCard === firstCard || clickedCard.classList.contains('matched')) return;
+                
+                if (gameState === 'idle') {
+                    gameState = 'playing';
+                    startTimer();
+                    newGameButton.textContent = "Reset Game";
+                }
 
                 clickedCard.classList.add('flipped');
 
@@ -374,35 +346,16 @@
                 checkForMatch();
             }
 
-            function handleTileRightClick(event) {
-                event.preventDefault();
-                if (gameState !== 'playing' || lockBoard) return;
-                const peekedCard = event.currentTarget;
-
-                if (peekedCard.classList.contains('matched') || peekedCard.classList.contains('flipped')) return;
-
-                peekedCard.classList.add('peeking');
-                setTimeout(() => {
-                    peekedCard.classList.remove('peeking');
-                }, 1000);
-            }
-
             function checkForMatch() {
                 const isMatch = firstCard.dataset.image === secondCard.dataset.image;
-                if (isMatch) {
-                    disableCards();
-                } else {
-                    unflipCards();
-                }
+                isMatch ? disableCards() : unflipCards();
             }
 
             function disableCards() {
                 firstCard.classList.add('matched');
                 secondCard.classList.add('matched');
-                // .flipped class is already there, .matched style will override or complement
-                
                 matchesFound++;
-                resetBoardStateAfterTurn();
+                resetTurnState();
                 if (matchesFound === totalPairs) {
                     winGame();
                 }
@@ -410,13 +363,13 @@
 
             function unflipCards() {
                 setTimeout(() => {
-                    if (firstCard) firstCard.classList.remove('flipped');
-                    if (secondCard) secondCard.classList.remove('flipped');
-                    resetBoardStateAfterTurn();
-                }, 1200);
+                    if(firstCard) firstCard.classList.remove('flipped');
+                    if(secondCard) secondCard.classList.remove('flipped');
+                    resetTurnState();
+                }, 1000);
             }
             
-            function resetBoardStateAfterTurn() {
+            function resetTurnState() {
                 [firstCard, secondCard] = [null, null];
                 lockBoard = false;
             }
@@ -447,8 +400,8 @@
                 return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             }
             
-            function resetToPreviewState() {
-                gameState = 'preview';
+            function initializeNewGame() {
+                gameState = 'idle';
                 stopTimer();
                 secondsElapsed = 0;
                 timerSpan.textContent = formatTime(secondsElapsed);
@@ -458,13 +411,15 @@
                 firstCard = null;
                 secondCard = null;
                 lockBoard = false;
+                newGameButton.textContent = "New Game";
 
-                createImageArray(); // Prepare fresh set of images
-                createBoard();      // Rebuild board in preview mode
+                createImageArray();
+                createBoard();      
 
-                startButton.disabled = false;
-                resetButton.disabled = true;
                 gameOverModal.style.display = 'none';
+                if (getFileLink) { // Ensure "Get Prize" link is hidden on reset
+                    getFileLink.style.display = 'none';
+                }
             }
 
             function winGame() {
@@ -475,22 +430,21 @@
                 modalMovesSpan.textContent = moves;
                 modalTimeSpan.textContent = formatTime(secondsElapsed);
                 gameOverModal.style.display = 'flex';
-                resetButton.disabled = false; // Allow reset from win screen
+                newGameButton.textContent = "Play Again?";
+
+                // Show "Get Your Prize" button if URL is configured
+                if (PRIZE_FILE_URL && PRIZE_FILE_URL.trim() !== "" && PRIZE_FILE_URL !== "https://play-online-games-free.github.io/tilegame/") {
+                    getFileLink.href = PRIZE_FILE_URL;
+                    getFileLink.style.display = 'inline-block'; // Or 'block' based on your layout preference
+                } else {
+                    getFileLink.style.display = 'none'; // Hide if no valid URL
+                }
             }
 
-            startButton.addEventListener('click', () => {
-                if (gameState === 'preview') {
-                    actuallyStartGame();
-                }
-            });
-            resetButton.addEventListener('click', resetToPreviewState);
-            playAgainButton.addEventListener('click', () => {
-                gameOverModal.style.display = 'none';
-                resetToPreviewState();
-            });
+            newGameButton.addEventListener('click', initializeNewGame);
+            playAgainButton.addEventListener('click', initializeNewGame);
 
-            // Initial game setup
-            resetToPreviewState(); // This will set up the preview board
+            initializeNewGame();
         });
     </script>
 </body>
