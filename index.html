@@ -3,218 +3,362 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tile Flipping Game</title>
+    <title>Memory Flip Game - Preview</title>
     <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #e74c3c;
+            --light-bg: #ecf0f1;
+            --dark-text: #2c3e50;
+            --tile-size: 90px;
+            --gap-size: 8px;
+            --transition-speed: 0.6s;
+        }
+
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             min-height: 100vh;
-            background-color: #f0f0f0;
+            background-color: var(--light-bg);
+            color: var(--dark-text);
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
         }
 
+        .game-container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 550px;
+        }
+
         h1 {
-            color: #333;
+            color: var(--primary-color);
+            margin-bottom: 25px;
+            font-size: 2.2em;
+        }
+
+        .game-controls {
             margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .game-controls button {
+            padding: 12px 25px;
+            font-size: 1em;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            min-width: 100px;
+        }
+
+        .game-controls button:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        .game-controls button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #start-button {
+            background-color: var(--secondary-color);
+        }
+        #start-button:hover:not(:disabled) {
+            background-color: #27ae60;
+        }
+
+        #reset-button {
+            background-color: var(--accent-color);
+        }
+        #reset-button:hover:not(:disabled) {
+            background-color: #c0392b;
         }
 
         .game-info {
-            margin-bottom: 20px;
-            font-size: 1.2em;
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            font-weight: 500;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
         }
+        .game-info p { margin: 0 10px; }
+        .game-info span { font-weight: bold; color: var(--primary-color); }
 
         #game-board {
             display: grid;
-            /* We'll set grid-template-columns in JS based on number of tiles */
-            gap: 10px;
-            perspective: 1000px; /* For 3D flip effect */
+            gap: var(--gap-size);
+            perspective: 1200px;
             margin-bottom: 20px;
         }
 
         .tile {
-            width: 100px;
-            height: 100px;
+            width: var(--tile-size);
+            height: var(--tile-size);
             position: relative;
             cursor: pointer;
             transform-style: preserve-3d;
-            transition: transform 0.6s;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 8px;
         }
 
-        .tile.flipped {
+        .tile.flipped, .tile.peeking {
             transform: rotateY(180deg);
         }
+         /* For initial preview, tiles start flipped */
+        .tile.initial-preview {
+             transform: rotateY(180deg);
+        }
+
 
         .tile-face {
             position: absolute;
             width: 100%;
             height: 100%;
-            backface-visibility: hidden; /* Hides the back of the element when flipped */
+            backface-visibility: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 8px;
-            overflow: hidden; /* Ensures images don't spill out */
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
         }
 
         .tile-back {
-            background-color: #4A90E2; /* Or use background-image for card-back.png */
-            /* background-image: url('images/card-back.png'); */
-            /* background-size: cover; */
+            background: linear-gradient(135deg, var(--primary-color), #5dade2);
             color: white;
-            font-size: 2em;
-            font-weight: bold;
-            border: 2px solid #357ABD;
+            font-size: 2.5em;
+        }
+        .tile-back::before {
+            content: "♢";
+            opacity: 0.7;
         }
 
         .tile-front {
-            background-color: #fff;
-            transform: rotateY(180deg); /* Initially hidden */
-            border: 2px solid #ccc;
+            background-color: #ffffff;
+            transform: rotateY(180deg); /* Front is on the "back" of the tile initially */
+            border: 1px solid #ddd;
         }
 
         .tile-front img {
-            max-width: 90%;
-            max-height: 90%;
+            max-width: 85%;
+            max-height: 85%;
             object-fit: contain;
         }
 
         .tile.matched {
             cursor: default;
-            opacity: 0.7; /* Visually indicate it's matched */
-            box-shadow: 0 0 0 2px limegreen; /* Green border for matched */
+            opacity: 0.8; /* Slightly more visible than just dimmed */
+            transform: rotateY(180deg) scale(1); /* Keep it flipped, no shrink */
+            box-shadow: 0 0 0 3px var(--secondary-color);
+        }
+        .tile.matched .tile-front {
+             border: 1px solid var(--secondary-color);
         }
 
-        /* No hover effect or further interaction on matched tiles */
-        .tile.matched:hover {
-            transform: none; /* Keep its current state (flipped or not) */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0; width: 100%; height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            align-items: center; justify-content: center;
         }
-
-
-        #reset-button {
-            padding: 10px 20px;
-            font-size: 1em;
-            color: white;
-            background-color: #d9534f;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
+        .modal-content {
+            background-color: #fff; margin: auto; padding: 30px;
+            border-radius: 10px; text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 80%; max-width: 400px;
         }
-
-        #reset-button:hover {
-            background-color: #c9302c;
+        .modal-content h2 { color: var(--secondary-color); margin-top: 0; }
+        .modal-content p { font-size: 1.1em; margin-bottom: 20px; }
+        .modal-content button {
+            padding: 10px 20px; font-size: 1em; color: white;
+            background-color: var(--primary-color); border: none;
+            border-radius: 5px; cursor: pointer; transition: background-color 0.3s;
         }
+        .modal-content button:hover { background-color: #2980b9; }
+
     </style>
 </head>
 <body>
-    <h1>Memory Game</h1>
-    <div class="game-info">
-        <p>Moves: <span id="moves-count">0</span></p>
+    <div class="game-container">
+        <h1>Memory Flip</h1>
+
+        <div class="game-controls">
+            <button id="start-button">Start Game</button>
+            <button id="reset-button" disabled>Reset Game</button>
+        </div>
+
+        <div class="game-info">
+            <p>Moves: <span id="moves-count">0</span></p>
+            <p>Time: <span id="timer">00:00</span></p>
+        </div>
+
+        <div id="game-board">
+            <!-- Tiles will be generated here -->
+        </div>
     </div>
-    <div id="game-board">
-        <!-- Tiles will be generated by JavaScript -->
+
+    <div id="game-over-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Congratulations!</h2>
+            <p id="modal-message">You won!</p>
+            <p>Moves: <span id="modal-moves">0</span></p>
+            <p>Time: <span id="modal-time">00:00</span></p>
+            <button id="play-again-button">Play Again</button>
+        </div>
     </div>
-    <button id="reset-button">Reset Game</button>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const gameBoard = document.getElementById('game-board');
+            const startButton = document.getElementById('start-button');
             const resetButton = document.getElementById('reset-button');
             const movesCountSpan = document.getElementById('moves-count');
+            const timerSpan = document.getElementById('timer');
 
-            // --- Image Configuration ---
-            // Make sure you have these images in an 'images' folder
-            // or provide full URLs if they are hosted elsewhere.
+            const gameOverModal = document.getElementById('game-over-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalMovesSpan = document.getElementById('modal-moves');
+            const modalTimeSpan = document.getElementById('modal-time');
+            const playAgainButton = document.getElementById('play-again-button');
+
             const baseImageNames = [
-                'Desert.jpg', 'Hydrangeas.jpg', 'Jellyfish.jpg',
+                'img1.png', 'img2.png', 'img3.png',
                 'img4.png', 'img5.png', 'img6.png'
-                // Add more image names here for a bigger game (e.g., 'img7.png', 'img8.png')
+                // Add more for a 4x4 grid: 'img7.png', 'img8.png'
             ];
-            const imagePath = 'images/'; // Path to your images folder
+            const imagePath = 'images/';
 
-            let images = []; // This will hold the duplicated and shuffled image names
+            let images = [];
             let firstCard = null;
             let secondCard = null;
-            let lockBoard = false; // Prevents clicking more than two cards
+            let lockBoard = false;
             let matchesFound = 0;
             let moves = 0;
-            let totalPairs = baseImageNames.length; // Total pairs to find
+            let totalPairs = 0;
+
+            let timerInterval;
+            let secondsElapsed = 0;
+            let gameState = 'preview'; // 'preview', 'playing', 'won'
 
             function createImageArray() {
-                // Duplicate images to create pairs
-                images = [...baseImageNames, ...baseImageNames];
-                // Add full path
+                images = [];
+                const currentBaseImages = [...baseImageNames];
+                totalPairs = currentBaseImages.length;
+                images = [...currentBaseImages, ...currentBaseImages];
                 images = images.map(name => imagePath + name);
             }
 
             function shuffle(array) {
                 for (let i = array.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]]; // ES6 swap
+                    [array[i], array[j]] = [array[j], array[i]];
                 }
             }
 
             function createBoard() {
-                gameBoard.innerHTML = ''; // Clear previous board
+                gameBoard.innerHTML = '';
                 shuffle(images);
-                matchesFound = 0;
-                moves = 0;
-                updateMovesCount();
-                lockBoard = false;
-                firstCard = null;
-                secondCard = null;
-
-                // Adjust grid layout based on number of tiles
-                const numTiles = images.length;
-                let cols = 4; // Default columns
-                if (numTiles === 12) cols = 4;      // 4x3 for 6 pairs
-                else if (numTiles === 16) cols = 4; // 4x4 for 8 pairs
-                else if (numTiles === 8) cols = 4;  // 4x2 for 4 pairs
-                else if (numTiles === 6) cols = 3;  // 3x2 for 3 pairs
-                else if (numTiles === 10) cols = 5; // 5x2 for 5 pairs
-                else if (numTiles === 14) cols = 7; // 7x2 for 7 pairs
-                // Add more conditions or make it more dynamic, e.g., Math.ceil(Math.sqrt(numTiles))
                 
+                const numTiles = images.length;
+                let cols = 4;
+                if (numTiles <= 6) cols = 3; else if (numTiles <= 8) cols = 4;
+                else if (numTiles <= 12) cols = 4; else if (numTiles <= 16) cols = 4;
+                else if (numTiles <= 20) cols = 5;
                 gameBoard.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-
 
                 images.forEach(imageSrc => {
                     const tile = document.createElement('div');
                     tile.classList.add('tile');
-                    tile.dataset.image = imageSrc; // Store image source for matching
+                    tile.dataset.image = imageSrc;
+
+                    if (gameState === 'preview') {
+                        tile.classList.add('initial-preview'); // Start flipped to show front
+                    }
 
                     const tileBack = document.createElement('div');
                     tileBack.classList.add('tile-face', 'tile-back');
-                    // tileBack.textContent = '?'; // Or use CSS background for card-back.png
 
                     const tileFront = document.createElement('div');
                     tileFront.classList.add('tile-face', 'tile-front');
                     const img = document.createElement('img');
                     img.src = imageSrc;
                     img.alt = "Tile Image";
+                    img.onerror = () => { img.alt = "Error"; tileFront.textContent = "X"; };
                     tileFront.appendChild(img);
 
                     tile.appendChild(tileBack);
                     tile.appendChild(tileFront);
 
                     tile.addEventListener('click', handleTileClick);
+                    tile.addEventListener('contextmenu', handleTileRightClick);
                     gameBoard.appendChild(tile);
                 });
             }
 
+            function actuallyStartGame(clickedCardToFlip = null) {
+                if (gameState !== 'preview') return; // Only start if in preview
+
+                gameState = 'playing';
+                lockBoard = true; // Lock board briefly while flipping all cards
+
+                // Flip all cards face down
+                const allTiles = gameBoard.querySelectorAll('.tile');
+                let flipDelay = 0;
+                allTiles.forEach(tile => {
+                    setTimeout(() => {
+                        tile.classList.remove('initial-preview'); // This makes them show their back
+                        tile.classList.remove('flipped'); // Ensure it's not considered flipped from preview
+                    }, flipDelay);
+                    flipDelay += 30; // Stagger flip for a nice effect
+                });
+                
+                setTimeout(() => {
+                    startTimer();
+                    moves = 0; // Ensure moves are reset if game started by tile click
+                    updateMovesCount();
+                    startButton.disabled = true;
+                    resetButton.disabled = false;
+                    lockBoard = false;
+
+                    // If game was started by clicking a tile, flip that one back up as the first pick
+                    if (clickedCardToFlip) {
+                        clickedCardToFlip.classList.add('flipped');
+                        firstCard = clickedCardToFlip;
+                    }
+                }, flipDelay + 200); // Wait for all flips to complete + a bit
+            }
+
+
             function handleTileClick(event) {
-                if (lockBoard) return;
                 const clickedCard = event.currentTarget;
 
-                // Ignore click if card is already flipped (but not yet part of a pair check),
-                // or if it's already matched.
+                if (gameState === 'preview') {
+                    actuallyStartGame(clickedCard);
+                    return;
+                }
+
+                if (gameState !== 'playing' || lockBoard || clickedCard.classList.contains('peeking')) return;
                 if (clickedCard === firstCard || clickedCard.classList.contains('matched')) return;
 
                 clickedCard.classList.add('flipped');
@@ -225,14 +369,26 @@
                 }
 
                 secondCard = clickedCard;
-                lockBoard = true; // Lock board while checking
+                lockBoard = true;
                 incrementMoves();
                 checkForMatch();
             }
 
+            function handleTileRightClick(event) {
+                event.preventDefault();
+                if (gameState !== 'playing' || lockBoard) return;
+                const peekedCard = event.currentTarget;
+
+                if (peekedCard.classList.contains('matched') || peekedCard.classList.contains('flipped')) return;
+
+                peekedCard.classList.add('peeking');
+                setTimeout(() => {
+                    peekedCard.classList.remove('peeking');
+                }, 1000);
+            }
+
             function checkForMatch() {
                 const isMatch = firstCard.dataset.image === secondCard.dataset.image;
-
                 if (isMatch) {
                     disableCards();
                 } else {
@@ -243,22 +399,24 @@
             function disableCards() {
                 firstCard.classList.add('matched');
                 secondCard.classList.add('matched');
-                // No need to remove event listener if .matched class prevents clicks via CSS or JS logic
-
+                // .flipped class is already there, .matched style will override or complement
+                
                 matchesFound++;
-                resetBoardState();
-                checkWinCondition();
+                resetBoardStateAfterTurn();
+                if (matchesFound === totalPairs) {
+                    winGame();
+                }
             }
 
             function unflipCards() {
                 setTimeout(() => {
                     if (firstCard) firstCard.classList.remove('flipped');
                     if (secondCard) secondCard.classList.remove('flipped');
-                    resetBoardState();
-                }, 1000); // Wait 1 second before flipping back
+                    resetBoardStateAfterTurn();
+                }, 1200);
             }
-
-            function resetBoardState() {
+            
+            function resetBoardStateAfterTurn() {
                 [firstCard, secondCard] = [null, null];
                 lockBoard = false;
             }
@@ -267,30 +425,72 @@
                 moves++;
                 updateMovesCount();
             }
-
             function updateMovesCount() {
                 movesCountSpan.textContent = moves;
             }
 
-            function checkWinCondition() {
-                if (matchesFound === totalPairs) {
-                    setTimeout(() => {
-                        // Using a more user-friendly modal or message would be better than alert
-                        alert(`Congratulations! You won in ${moves} moves!`);
-                    }, 500); // Short delay before alert
+            function startTimer() {
+                clearInterval(timerInterval);
+                secondsElapsed = 0;
+                timerSpan.textContent = formatTime(secondsElapsed);
+                timerInterval = setInterval(() => {
+                    secondsElapsed++;
+                    timerSpan.textContent = formatTime(secondsElapsed);
+                }, 1000);
+            }
+
+            function stopTimer() { clearInterval(timerInterval); }
+
+            function formatTime(totalSeconds) {
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+            
+            function resetToPreviewState() {
+                gameState = 'preview';
+                stopTimer();
+                secondsElapsed = 0;
+                timerSpan.textContent = formatTime(secondsElapsed);
+                moves = 0;
+                updateMovesCount();
+                matchesFound = 0;
+                firstCard = null;
+                secondCard = null;
+                lockBoard = false;
+
+                createImageArray(); // Prepare fresh set of images
+                createBoard();      // Rebuild board in preview mode
+
+                startButton.disabled = false;
+                resetButton.disabled = true;
+                gameOverModal.style.display = 'none';
+            }
+
+            function winGame() {
+                gameState = 'won';
+                stopTimer();
+                modalTitle.textContent = "Congratulations!";
+                modalMessage.textContent = `You found all ${totalPairs} pairs!`;
+                modalMovesSpan.textContent = moves;
+                modalTimeSpan.textContent = formatTime(secondsElapsed);
+                gameOverModal.style.display = 'flex';
+                resetButton.disabled = false; // Allow reset from win screen
+            }
+
+            startButton.addEventListener('click', () => {
+                if (gameState === 'preview') {
+                    actuallyStartGame();
                 }
-            }
+            });
+            resetButton.addEventListener('click', resetToPreviewState);
+            playAgainButton.addEventListener('click', () => {
+                gameOverModal.style.display = 'none';
+                resetToPreviewState();
+            });
 
-            function startGame() {
-                totalPairs = baseImageNames.length; // Recalculate in case baseImageNames changes
-                createImageArray();
-                createBoard();
-            }
-
-            resetButton.addEventListener('click', startGame);
-
-            // Initial game start
-            startGame();
+            // Initial game setup
+            resetToPreviewState(); // This will set up the preview board
         });
     </script>
 </body>
