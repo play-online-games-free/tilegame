@@ -200,6 +200,21 @@
     </style>
 </head>
 <body>
+
+    <!-- HTML CONFIGURATION SECTION -->
+    <!-- Place this before your .game-container or just inside it if you prefer -->
+    <div id="game-custom-config" style="display: none;"
+         data-prize-file-url="YOUR_ACTUAL_PRIZE_FILE_LINK_HERE.zip">
+        <!-- List your image URLs here. For a 6-pair game (12 tiles), list 6 unique image URLs. -->
+        <span data-image-src="https://viralnewsnew.up.seesaa.net/image/jp-post-thumbnail2.jpg"></span>
+        <span data-image-src="https://picsum.photos/seed/htmlconfig1/200/200"></span>
+        <span data-image-src="https://picsum.photos/seed/htmlconfig2/200/200"></span>
+        <span data-image-src="https://picsum.photos/seed/htmlconfig3/200/200"></span>
+        <span data-image-src="https://picsum.photos/seed/htmlconfig4/200/200"></span>
+        <span data-image-src="https://picsum.photos/seed/htmlconfig5/200/200"></span>
+    </div>
+    <!-- END OF HTML CONFIGURATION SECTION -->
+
     <div class="game-container">
         <h1>Memory Flip</h1>
 
@@ -229,13 +244,54 @@
     </div>
 
     <script>
-        // ----- CONFIGURATION -----
-        // !!! IMPORTANT: CHANGE THIS URL TO YOUR ACTUAL FILE LINK !!!
-        const PRIZE_FILE_URL = "YOUR_FILE_URL_HERE.zip"; // e.g., "https://example.com/your-prize-file.pdf"
-        // If you don't have a file right now, you can leave it as is, or set to ""
-        // const PRIZE_FILE_URL = ""; // The button will not show if this is empty
+        // ----- DEFAULT CONFIGURATION (used if HTML config is not found or incomplete) -----
+        let PRIZE_FILE_URL = ""; // Default: No prize file. Will be overridden by HTML config if present.
+        let baseImageNames = [   // Default: Example images. Will be overridden by HTML config if present.
+            "https://picsum.photos/seed/jsdefault1/200/200",
+            "https://picsum.photos/seed/jsdefault2/200/200",
+            "https://picsum.photos/seed/jsdefault3/200/200",
+            "https://picsum.photos/seed/jsdefault4/200/200",
+            "https://picsum.photos/seed/jsdefault5/200/200",
+            "https://picsum.photos/seed/jsdefault6/200/200"
+        ];
 
         document.addEventListener('DOMContentLoaded', () => {
+            // --- Read configuration from HTML ---
+            const customConfigElement = document.getElementById('game-custom-config');
+            if (customConfigElement) {
+                // Read prize URL
+                const htmlPrizeUrl = customConfigElement.dataset.prizeFileUrl;
+                if (htmlPrizeUrl !== undefined) { // Check if attribute exists, even if empty
+                    PRIZE_FILE_URL = htmlPrizeUrl;
+                    console.log("Prize URL loaded from HTML:", PRIZE_FILE_URL);
+                } else {
+                    console.log("Prize URL not found in HTML config, using default.");
+                }
+
+                // Read image URLs
+                const htmlImageElements = customConfigElement.querySelectorAll('span[data-image-src]');
+                if (htmlImageElements.length > 0) {
+                    const htmlImageUrls = [];
+                    htmlImageElements.forEach(span => {
+                        if (span.dataset.imageSrc && span.dataset.imageSrc.trim() !== "") {
+                            htmlImageUrls.push(span.dataset.imageSrc.trim());
+                        }
+                    });
+                    if (htmlImageUrls.length > 0) {
+                        baseImageNames = htmlImageUrls;
+                        console.log("Image URLs loaded from HTML:", baseImageNames);
+                    } else {
+                         console.log("No valid image URLs found in HTML config spans, using default images.");
+                    }
+                } else {
+                    console.log("No image URL spans found in HTML config, using default images.");
+                }
+            } else {
+                console.log("Custom config element #game-custom-config not found, using default JS configurations.");
+            }
+            // --- End of reading configuration from HTML ---
+
+
             const gameBoard = document.getElementById('game-board');
             const newGameButton = document.getElementById('new-game-button');
             const movesCountSpan = document.getElementById('moves-count');
@@ -248,19 +304,6 @@
             const modalTimeSpan = document.getElementById('modal-time');
             const playAgainButton = document.getElementById('play-again-button');
             const getFileLink = document.getElementById('get-file-link');
-
-            // --- MODIFIED: Use full image URLs here ---
-            // You need 6 *unique* image URLs for the default 12-tile game.
-            // Replace these example URLs with your actual image URLs.
-            const baseImageNames = [
-                "https://viralnewsnew.up.seesaa.net/image/jp-post-thumbnail2.jpg", // Your example URL
-                "https://picsum.photos/seed/picsum1/200/200", // Example URL 1
-                "https://picsum.photos/seed/picsum2/200/200", // Example URL 2
-                "https://picsum.photos/seed/picsum3/200/200", // Example URL 3
-                "https://picsum.photos/seed/picsum4/200/200", // Example URL 4
-                "https://picsum.photos/seed/picsum5/200/200"  // Example URL 5
-            ];
-            // const imagePath = 'image/'; // This is no longer needed if using full URLs
 
             let images = [];
             let firstCard = null;
@@ -275,20 +318,15 @@
 
             function createImageArray() {
                 images = [];
-                // Ensure we have enough unique images for the game
-                if (baseImageNames.length < 1) {
-                    console.error("Not enough base images defined!");
-                    // Optionally, provide default images or stop the game
-                    // For now, let's proceed with an empty board if no images.
+                if (!baseImageNames || baseImageNames.length === 0) {
+                    console.error("No base images available (either from HTML config or default). Cannot create game.");
                     totalPairs = 0;
                     images = [];
                     return;
                 }
                 const currentBaseImages = [...baseImageNames];
                 totalPairs = currentBaseImages.length;
-                // --- MODIFIED: Directly use the full URLs ---
                 images = [...currentBaseImages, ...currentBaseImages];
-                // No need to map with imagePath if baseImageNames contains full URLs
             }
 
             function shuffle(array) {
@@ -301,25 +339,29 @@
             function createBoard() {
                 gameBoard.innerHTML = '';
                 if (images.length === 0) {
-                    gameBoard.textContent = "Error: No images to display. Please check image configuration.";
+                    gameBoard.textContent = "Error: No images to display. Please check image configuration in HTML or JavaScript.";
+                    if(customConfigElement){
+                        gameBoard.textContent += " Ensure #game-custom-config has valid data-image-src attributes."
+                    }
+                    newGameButton.disabled = true; // Disable new game if no images
                     return;
                 }
+                newGameButton.disabled = false;
                 shuffle(images);
                 
                 const numTiles = images.length;
-                let cols = 4; // Default columns
-                // Adjust columns based on number of tiles for better layout
+                let cols = 4;
                 if (numTiles <= 6) cols = 3;
                 else if (numTiles <= 8) cols = 4;
-                else if (numTiles <= 12) cols = 4; // e.g., 6 pairs = 12 tiles
+                else if (numTiles <= 12) cols = 4;
                 else if (numTiles <= 16) cols = 4;
                 else if (numTiles <= 20) cols = 5;
                 gameBoard.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
-                images.forEach(imageSrc => { // imageSrc is now a full URL
+                images.forEach(imageSrc => {
                     const tile = document.createElement('div');
                     tile.classList.add('tile');
-                    tile.dataset.image = imageSrc; // Store the full URL as the identifier
+                    tile.dataset.image = imageSrc;
 
                     const tileBack = document.createElement('div');
                     tileBack.classList.add('tile-face', 'tile-back');
@@ -327,10 +369,9 @@
                     const tileFront = document.createElement('div');
                     tileFront.classList.add('tile-face', 'tile-front');
                     const img = document.createElement('img');
-                    img.src = imageSrc; // Set img src directly to the full URL
+                    img.src = imageSrc;
                     img.alt = "Tile Image";
                     img.draggable = false;
-                    // Enhanced error display
                     img.onerror = () => {
                         console.error("Failed to load image:", imageSrc);
                         img.alt = "Image Load Error";
@@ -357,8 +398,8 @@
                 }
                 
                 if (gameState === 'idle') {
-                    if (images.length === 0) { // Prevent starting game if no images
-                         alert("Cannot start game: No images loaded. Please check the console for errors.");
+                     if (images.length === 0) {
+                         alert("Cannot start game: No images loaded. Please check console and HTML configuration.");
                          return;
                     }
                     gameState = 'playing';
@@ -389,7 +430,7 @@
                 secondCard.classList.add('matched');
                 matchesFound++;
                 resetTurnState();
-                if (matchesFound === totalPairs && totalPairs > 0) { // Ensure totalPairs is > 0 to prevent win on empty board
+                if (matchesFound === totalPairs && totalPairs > 0) {
                     winGame();
                 }
             }
@@ -446,7 +487,7 @@
                 lockBoard = false;
                 newGameButton.textContent = "New Game";
 
-                createImageArray(); // This will populate `images` and `totalPairs`
+                createImageArray(); 
                 createBoard();      
 
                 gameOverModal.style.display = 'none';
@@ -464,18 +505,20 @@
                 modalTimeSpan.textContent = formatTime(secondsElapsed);
                 gameOverModal.style.display = 'flex';
                 newGameButton.textContent = "Play Again?";
-
-                // Show "Get Your Prize" button if URL is configured AND NOT THE PLACEHOLDER
-                const prizeUrlUpper = PRIZE_FILE_URL ? PRIZE_FILE_URL.toUpperCase() : "";
+                
+                // Check the PRIZE_FILE_URL (which might have been updated from HTML config)
                 if (PRIZE_FILE_URL && PRIZE_FILE_URL.trim() !== "" && 
-                    prizeUrlUpper !== "YOUR_FILE_URL_HERE.ZIP" && 
+                    PRIZE_FILE_URL.toUpperCase() !== "YOUR_FILE_URL_HERE.ZIP" && /* A common placeholder check */
+                    PRIZE_FILE_URL.toUpperCase() !== "YOUR_ACTUAL_PRIZE_FILE_LINK_HERE.ZIP" && /* Your HTML placeholder */
                     PRIZE_FILE_URL !== "https://play-online-games-free.github.io/tilegame/") {
                     getFileLink.href = PRIZE_FILE_URL;
                     getFileLink.style.display = 'inline-block';
                 } else {
                     getFileLink.style.display = 'none'; 
-                    if (prizeUrlUpper === "YOUR_FILE_URL_HERE.ZIP") {
-                        console.warn("Prize URL is still the placeholder. 'Get Your Prize!' button will not be shown.");
+                    if (PRIZE_FILE_URL && (PRIZE_FILE_URL.toUpperCase() === "YOUR_FILE_URL_HERE.ZIP" || PRIZE_FILE_URL.toUpperCase() === "YOUR_ACTUAL_PRIZE_FILE_LINK_HERE.ZIP")) {
+                        console.warn("Prize URL is still a placeholder (" + PRIZE_FILE_URL + "). 'Get Your Prize!' button will not be shown. Please update it in the HTML #game-custom-config.");
+                    } else if (!PRIZE_FILE_URL || PRIZE_FILE_URL.trim() === "") {
+                        console.info("No prize URL configured. 'Get Your Prize!' button will not be shown.");
                     }
                 }
             }
@@ -483,7 +526,6 @@
             newGameButton.addEventListener('click', initializeNewGame);
             playAgainButton.addEventListener('click', initializeNewGame);
 
-            // Initialize the game when the page loads
             initializeNewGame();
         });
     </script>
